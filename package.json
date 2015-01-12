@@ -26,5 +26,9 @@
   "license": "MIT",
   "engines": {
     "node": "0.10.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "bower install"
   }
 }
