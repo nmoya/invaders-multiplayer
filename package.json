@@ -1,0 +1,30 @@
+{
+  "name": "Moydovia",
+  "version": "0.0.0",
+  "description": "This is a very cool game!",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "body-parser": "^1.10.1",
+    "express": "^4.10.7",
+    "socket.io": "^1.2.1",
+    "statik": "^1.4.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@heroku.com:moydovia.git"
+  },
+  "keywords": [
+    "game",
+    "global",
+    "game",
+    "jam"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": "0.10.x"
+  }
+}

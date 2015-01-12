@@ -1,5 +1,6 @@
 # Created by https://www.gitignore.io
 
+.DS_Store
 ### Node ###
 # Logs
 logs
@@ -40,7 +41,6 @@ bower_components/
 *.log
 
 build/
-dist/
 
 
 ### Windows ###
