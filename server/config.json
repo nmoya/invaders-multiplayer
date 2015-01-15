@@ -1,0 +1,49 @@
+{
+    "Player": {
+        "regular_speed": 8,
+        "start_pos": [
+            400,
+            500
+        ]
+    },
+    "Enemy": {
+        "common_enemy": {
+            "min_speed": 3,
+            "max_speed": 6,
+            "life": 100,
+            "attack_radius": 10,
+            "bbox_owh": [
+                6,
+                7,
+                28,
+                39
+            ]
+        },
+        "flux_enemy": {
+            "acceleration": 0.350,
+            "max_speed": 12,
+            "life": 100,
+            "attack_radius": 15,
+            "bbox_owh": [
+                6,
+                7,
+                28,
+                39
+            ]
+        }
+    },
+    "Game": {
+        "max_fps": 20,
+        "width": 800,
+        "height": 600,
+        "start_level": 1
+    },
+    "Items": {
+        "names": {
+            "offset": [
+                20,
+                57
+            ]
+        }
+    }
+}

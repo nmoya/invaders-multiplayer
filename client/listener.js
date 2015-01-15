@@ -1,0 +1,6 @@
+function listen(callback) {
+
+
+
+	callback();
+}
