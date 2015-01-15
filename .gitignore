@@ -2,6 +2,7 @@
 
 .DS_Store
 ### Node ###
+=======
 # Logs
 logs
 *.log
@@ -63,3 +64,10 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+=======
+# Commenting this out is preferred by some people, see
+# https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git-
+node_modules
+
+# Users Environment Variables
+.lock-wscript
