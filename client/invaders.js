@@ -151,6 +151,7 @@ function InvadersGame() {
             game.physics.arcade.overlap(bullets, aliens, invaders.collisionHandler, null, this);
             game.physics.arcade.overlap(enemyBullets, players[my_id], invaders.enemyHitsPlayer, null, this);
         }
+        invaders.updateOtherPlayers();
 
     }
 
@@ -187,23 +188,6 @@ function InvadersGame() {
     this.descend = function() {
         aliens.y += 10;
     }
-
-
-    this.updateOtherClients = function(GameState) {
-        for (key in GameState.Users) {
-            if (key != my_id) {
-                if (typeof players[key] == "undefined") {
-                    players[key] = game.add.sprite(400, 500, 'ally');
-                    players[key].anchor.setTo(0.5, 0.5);
-                    game.physics.enable(players[key], Phaser.Physics.ARCADE);
-                }
-                players[key].body.x = GameState.Users[key].x;
-                players[key].body.y = GameState.Users[key].y;
-            }
-        }
-    }
-
-
     this.collisionHandler = function(bullet, alien) {
 
 
@@ -334,6 +318,27 @@ function InvadersGame() {
         stateText.visible = false;
 
     }
+
+    this.updateOtherPlayers = function() {
+        for (key in GameState.Users) {
+            if (key != my_id) {
+                if (typeof players[key] == "undefined") {
+                    players[key] = game.add.sprite(400, 500, 'ally');
+                    players[key].anchor.setTo(0.5, 0.5);
+                    game.physics.enable(players[key], Phaser.Physics.ARCADE);
+                }
+                players[key].body.x = GameState.Users[key].x;
+                players[key].body.y = GameState.Users[key].y;
+            }
+        }
+    }
+
+    this.killPlayer = function(id) {
+        players[id].kill();
+        delete players[id];
+    }
+
+
 
     this.render = function() {
 
