@@ -227,7 +227,7 @@ function InvadersGame() {
         live = lives.getFirstAlive();
 
         if (live) {
-            live.kill();
+            //live.kill();
         }
 
         //  And create an explosion :)
@@ -334,8 +334,14 @@ function InvadersGame() {
     }
 
     this.killPlayer = function(id) {
-        players[id].kill();
-        delete players[id];
+        if (typeof players[id] != "undefined") {
+            console.log("Killing player %s", id);
+            players[id].kill();
+            players[id].destroy();
+            console.log(players[id].visible);
+            delete GameState.Users[id];
+            delete players[id];
+        }
     }
 
 

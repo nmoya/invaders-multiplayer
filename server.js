@@ -55,6 +55,7 @@
 			socket.on("disconnect", function() {
 				clients--;
 				GS.destroyPlayer(socket["conn"]["id"]);
+				io.emit("disconnection", socket["conn"]["id"]);
 				// io.emit("players", {"num": clients });
 				console.log("Playing (%d)", clients);
 			});
