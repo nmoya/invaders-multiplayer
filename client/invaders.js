@@ -2,7 +2,7 @@ function InvadersGame() {
 
     var player;
     var aliens;
-    var bullets;
+    var bullets = null;
     var bulletTime = 0;
     var cursors;
     var fireButton;
@@ -236,7 +236,7 @@ function InvadersGame() {
     this.updateAliensNotLeader = function() {
         var i = 0;
         aliens.forEach(function(a) {
-            if (!Aliens[i].status.alive)
+            if (Aliens.length > 0 && !Aliens[i].status.alive)
                 a.kill();
             i += 1;
         });
@@ -374,11 +374,13 @@ function InvadersGame() {
     }
 
     this.insertBulletFromOtherPlayer = function(bu) {
-        b = bullets.getFirstExists(false);
-        if (b) {
-            //  And fire it
-            b.reset(bu.status.x, bu.status.y + 8);
-            b.body.velocity.y = -400;
+        if (bullets != null) {
+            b = bullets.getFirstExists(false);
+            if (b) {
+                //  And fire it
+                b.reset(bu.status.x, bu.status.y + 8);
+                b.body.velocity.y = -400;
+            }
         }
     }
 
