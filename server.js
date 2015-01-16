@@ -11,8 +11,11 @@
 	GameState = {
 		uid: 0,
 		time: 0,
+		score: 0,
+		leader: null,
 		config: {},
 		Enemies: {},
+		Bullets: {},
 		Users: {},
 		level: 0,
 		aliveEnemies: 0,
@@ -32,7 +35,6 @@
 			res.sendFile(__dirname + req.params[0]);
 		});
 
-		GS.loadConfigFile();
 	}
 
 	function listener() {
@@ -44,18 +46,35 @@
 
 
 			GS.createPlayer(socket["conn"]["id"]);
+			if (clients == 1) {
+				GameState.leader = socket["conn"]["id"];
+				io.emit("bc_refresh", GameState);
+			}
 
 			socket.on("update", function(state) {
 				GS.updatePlayerCoords(state.id, state.status);
-				io.emit("refresh", GameState);
+				io.emit("bc_refresh", GameState);
+			});
 
+			socket.on("bullet", function(bullet) {
+				io.emit("bc_bullet", bullet);
+			});
 
+			socket.on("enemies", function(enem) {
+				io.emit("bc_enemies", enem);
+			});
+
+			socket.on("score_update", function(score) {
+				GameState.score += score;
+				io.emit("bc_refresh", GameState);
 			});
 
 			socket.on("disconnect", function() {
 				clients--;
 				GS.destroyPlayer(socket["conn"]["id"]);
 				io.emit("disconnection", socket["conn"]["id"]);
+				if (clients == 0)
+					GS.destroyGameState();
 				// io.emit("players", {"num": clients });
 				console.log("Playing (%d)", clients);
 			});
@@ -65,7 +84,9 @@
 	}
 
 
+	GS.loadConfigFile(function() {
+		init_static();
+		listener();
+	});
 
-	init_static();
-	listener();
 })();

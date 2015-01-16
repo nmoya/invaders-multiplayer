@@ -3,13 +3,14 @@ var CONFIG = null;
 
 module.exports = {
 
-    loadConfigFile: function() {
+    loadConfigFile: function(callback) {
         fs.readFile("./server/config.json", 'utf8', function(err, data) {
             if (err) {
                 console.log('Error: ' + err);
                 return;
             }
             CONFIG = JSON.parse(data);
+            callback();
         });
     },
     // fs.readFile("./server/names.json", 'utf8', function(err, data) {
@@ -27,6 +28,8 @@ module.exports = {
     },
     destroyPlayer: function(socket_id) {
         delete GameState.Users[socket_id];
+        if (GameState.leader == socket_id && clients > 0)
+            GameState.leader = leader_election();
         io.emit("disconnection", socket_id);
     },
     updatePlayerCoords: function(socket_id, user) {
@@ -98,15 +101,31 @@ module.exports = {
     //     });
     //     serverinterval = setInterval(serverloop, 1000 / CONFIG.Game.max_fps);
     // },
-    // destroyGameState: function() {
-    //     clearInterval(serverinterval);
-    //     GameState = {};
-    //     GameState.Users = {};
-    //     GameState.config = CONFIG;
-    //     GameState.Enemies = {};
-    //     GameState.crown_position = {
-    //         x: CONFIG.Items.crown.start_pos[0],
-    //         y: CONFIG.Items.crown.start_pos[1]
-    //     };
-    // }
+    destroyGameState: function() {
+        //clearInterval(serverinterval);
+        GameState = {};
+        GameState.Users = {};
+        GameState.config = CONFIG;
+        GameState.Enemies = {};
+        GameState.score = 0;
+    }
+}
+
+function leader_election() {
+    var user_list = []
+    for (var k in GameState.Users)
+        user_list.push(k);
+    return user_list[randomInt(0, user_list.length - 1)];
+}
+
+function randomInt(min, max) {
+    return Math.round(min + Math.random() * (max - min));
+}
+
+function randomFloat(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function euclidean_distance(object1, object2) {
+    return Math.sqrt((object1.x - object2.x) * (object1.x - object2.x) + (object1.y - object2.y) * (object1.y - object2.y));
 }

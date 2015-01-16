@@ -10,7 +10,7 @@ function InvadersGame() {
     var starfield;
     var score = 0;
     var scoreString = '';
-    var scoreText;
+    var scoreText = null;
     var lives;
     var enemyBullet;
     var firingTimer = 0;
@@ -42,7 +42,7 @@ function InvadersGame() {
         bullets = game.add.group();
         bullets.enableBody = true;
         bullets.physicsBodyType = Phaser.Physics.ARCADE;
-        bullets.createMultiple(30, 'bullet');
+        bullets.createMultiple(100, 'bullet');
         bullets.setAll('anchor.x', 0.5);
         bullets.setAll('anchor.y', 1);
         bullets.setAll('outOfBoundsKill', true);
@@ -59,16 +59,14 @@ function InvadersGame() {
         enemyBullets.setAll('checkWorldBounds', true);
 
         //  The hero!
-        players[my_id] = game.add.sprite(400, 500, 'ship');
-        players[my_id].anchor.setTo(0.5, 0.5);
-        game.physics.enable(players[my_id], Phaser.Physics.ARCADE);
+        Players[my_id] = game.add.sprite(400, 500, 'ship');
+        Players[my_id].anchor.setTo(0.5, 0.5);
+        game.physics.enable(Players[my_id], Phaser.Physics.ARCADE);
 
         //  The baddies!
         aliens = game.add.group();
         aliens.enableBody = true;
         aliens.physicsBodyType = Phaser.Physics.ARCADE;
-
-        invaders.createAliens();
 
         //  The score
         scoreString = 'Score: ';
@@ -110,6 +108,9 @@ function InvadersGame() {
         //  And some controls to play the game with
         cursors = game.input.keyboard.createCursorKeys();
         fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
+        if (invaders.isLeader())
+            invaders.createAliens();
     }
     this.update = function() {
 
@@ -117,15 +118,15 @@ function InvadersGame() {
         var key_press = false;
         starfield.tilePosition.y += 2;
 
-        if (players[my_id].alive) {
-            //  Reset the players[my_id], then check for movement keys
-            players[my_id].body.velocity.setTo(0, 0);
+        if (Players[my_id].alive) {
+            //  Reset the Players[my_id], then check for movement keys
+            Players[my_id].body.velocity.setTo(0, 0);
 
             if (cursors.left.isDown) {
-                players[my_id].body.velocity.x = -200;
+                Players[my_id].body.velocity.x = -200;
                 key_press = true;
             } else if (cursors.right.isDown) {
-                players[my_id].body.velocity.x = 200;
+                Players[my_id].body.velocity.x = 200;
                 key_press = true;
             }
 
@@ -141,18 +142,39 @@ function InvadersGame() {
                 socket.emit("update", {
                     "id": my_id,
                     "status": {
-                        "x": players[my_id].body.x,
-                        "y": players[my_id].body.y
+                        "x": Players[my_id].body.x,
+                        "y": Players[my_id].body.y
                     }
-                })
+                });
             }
 
             //  Run collision
             game.physics.arcade.overlap(bullets, aliens, invaders.collisionHandler, null, this);
-            game.physics.arcade.overlap(enemyBullets, players[my_id], invaders.enemyHitsPlayer, null, this);
+            game.physics.arcade.overlap(enemyBullets, Players[my_id], invaders.enemyHitsPlayer, null, this);
         }
         invaders.updateOtherPlayers();
-
+        if (invaders.isLeader()) {
+            enemies = [];
+            i = 0;
+            aliens.forEach(function(a) {
+                enemies.push({
+                    "id": i,
+                    "status": {
+                        "alive": a.alive,
+                        "progress": aliens.y,
+                        "x": a.x,
+                        "y": a.y
+                    }
+                });
+            });
+            socket.emit("enemies", enemies);
+        } else {
+            if (aliens.length == 0)
+                invaders.createAliensNotLeader();
+            else {
+                invaders.updateAliensNotLeader();
+            }
+        }
     }
 
     this.createAliens = function() {
@@ -178,6 +200,33 @@ function InvadersGame() {
         //  When the tween loops it calls descend
         tween.onLoop.add(invaders.descend, this);
     }
+    this.createAliensNotLeader = function() {
+        for (var i in Aliens) {
+            var alien = aliens.create(50 + Aliens[i].status.x, 50 + Aliens[i].status.progress + Aliens[i].status.y, 'invader');
+            alien.anchor.setTo(0.5, 0.5);
+            alien.animations.add('fly', [0, 1, 2, 3], 20, true);
+            alien.play('fly');
+            alien.body.moves = false;
+            if (!Aliens[i].status.alive)
+                alien.kill();
+        }
+        //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to, rather than the invaders directly.
+        var tween = game.add.tween(aliens).to({
+            x: 350
+        }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
+
+        //  When the tween loops it calls descend
+        tween.onLoop.add(invaders.descend, this);
+    }
+    this.updateAliensNotLeader = function() {
+        var i = 0;
+        aliens.forEach(function(a) {
+            a.reset(Aliens[i].status.x, Aliens[i].status.y);
+            if (!Aliens[i].status.alive)
+                a.kill();
+            i += 1;
+        })
+    }
 
     this.setupInvader = function(invader) {
         invader.anchor.x = 0.5;
@@ -188,18 +237,17 @@ function InvadersGame() {
     this.descend = function() {
         aliens.y += 10;
     }
+    this.scoreUpdate = function(score) {
+        if (scoreText != null)
+            scoreText.text = scoreString + score;
+    }
     this.collisionHandler = function(bullet, alien) {
-
-
         //  When a bullet hits an alien we kill them both
         bullet.kill();
         alien.kill();
 
-        //console.log(aliens.getIndex(alien));
-
-        //  Increase the score
-        score += 20;
-        scoreText.text = scoreString + score;
+        if (invaders.isLeader())
+            socket.emit("score_update", 20);
 
         //  And create an explosion :)
         var explosion = explosions.getFirstExists(false);
@@ -207,8 +255,7 @@ function InvadersGame() {
         explosion.play('kaboom', 30, false, true);
 
         if (aliens.countLiving() == 0) {
-            score += 1000;
-            scoreText.text = scoreString + score;
+            socket.emit("score_update", 1000);
 
             enemyBullets.callAll('kill', this);
             stateText.text = " You Won! \n Click to restart";
@@ -272,7 +319,7 @@ function InvadersGame() {
             // And fire the bullet from this enemy
             enemyBullet.reset(shooter.body.x, shooter.body.y);
 
-            game.physics.arcade.moveToObject(enemyBullet, players[my_id], 120);
+            game.physics.arcade.moveToObject(enemyBullet, Players[my_id], 120);
             firingTimer = game.time.now + 2000;
         }
 
@@ -287,19 +334,29 @@ function InvadersGame() {
 
             if (bullet) {
                 //  And fire it
-                bullet.reset(players[my_id].x, players[my_id].y + 8);
+                bullet.reset(Players[my_id].x, Players[my_id].y + 8);
                 bullet.body.velocity.y = -400;
                 bulletTime = game.time.now + 200;
+
+                socket.emit("bullet", {
+                    "id": my_id,
+                    "status": {
+                        "x": Players[my_id].x,
+                        "y": Players[my_id].y
+                    }
+                });
             }
         }
 
     }
 
-    this.resetBullet = function(bullet) {
-
-        //  Called if the bullet goes out of the screen
-        bullet.kill();
-
+    this.insertBulletFromOtherPlayer = function(bu) {
+        b = bullets.getFirstExists(false);
+        if (b) {
+            //  And fire it
+            b.reset(bu.status.x, bu.status.y + 8);
+            b.body.velocity.y = -400;
+        }
     }
 
     this.restart = function() {
@@ -310,10 +367,11 @@ function InvadersGame() {
         lives.callAll('revive');
         //  And brings the aliens back from the dead :)
         aliens.removeAll();
-        invaders.createAliens();
+        if (invaders.isLeader())
+            invaders.createAliens();
 
         //revives the player
-        players[my_id].revive();
+        Players[my_id].revive();
         //hides the text
         stateText.visible = false;
 
@@ -322,28 +380,30 @@ function InvadersGame() {
     this.updateOtherPlayers = function() {
         for (key in GameState.Users) {
             if (key != my_id) {
-                if (typeof players[key] == "undefined") {
-                    players[key] = game.add.sprite(400, 500, 'ally');
-                    players[key].anchor.setTo(0.5, 0.5);
-                    game.physics.enable(players[key], Phaser.Physics.ARCADE);
+                if (typeof Players[key] == "undefined") {
+                    Players[key] = game.add.sprite(GameState.Users[key].x, GameState.Users[key].y, 'ally');
+                    Players[key].anchor.setTo(0.5, 0.5);
+                    game.physics.enable(Players[key], Phaser.Physics.ARCADE);
                 }
-                players[key].body.x = GameState.Users[key].x;
-                players[key].body.y = GameState.Users[key].y;
+                Players[key].body.x = GameState.Users[key].x;
+                Players[key].body.y = GameState.Users[key].y;
             }
         }
     }
 
     this.killPlayer = function(id) {
-        if (typeof players[id] != "undefined") {
+        if (typeof Players[id] != "undefined") {
             console.log("Killing player %s", id);
-            players[id].kill();
-            players[id].destroy();
-            console.log(players[id].visible);
+            Players[id].kill();
+            Players[id].destroy();
+            console.log(Players[id].visible);
             delete GameState.Users[id];
-            delete players[id];
+            delete Players[id];
         }
     }
-
+    this.isLeader = function() {
+        return GameState.leader == my_id;
+    }
 
 
     this.render = function() {
