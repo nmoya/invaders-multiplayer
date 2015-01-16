@@ -13,6 +13,7 @@ function InvadersGame() {
     var score = 0;
     var scoreString = '';
     var scoreText = null;
+    var latencyText = null;
     var lives;
     var enemyBullet;
     var firingTimer = 0;
@@ -79,6 +80,16 @@ function InvadersGame() {
         scoreText.visible = false;
         scoreText.visible = true;
         scoreText.text = scoreString + score;
+
+        // Latency label
+        latencyText = game.add.text(750, 575, Math.floor(Latency) + "ms", {
+            font: '14px press_start_kregular',
+            fill: '#fff'
+        });
+        scoreText.visible = false;
+        scoreText.visible = true;
+        latencyText.text = Math.floor(Latency) + " ms";
+
 
         //  Lives
         lives = game.add.group();
@@ -371,6 +382,9 @@ function InvadersGame() {
             }
         }
 
+    }
+    this.updateLatency = function() {
+        latencyText.text = Math.floor(Latency) + " ms";
     }
 
     this.insertBulletFromOtherPlayer = function(bu) {

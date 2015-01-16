@@ -7,6 +7,7 @@
 	invaders = null;
 	GameState = [];
 	Aliens = [];
+	Latency = 0;
 	socket.on('connect', function() {
 		my_id = socket.io.engine.id;
 		invaders = new InvadersGame();
@@ -28,6 +29,16 @@
 			if (bullet.id != my_id)
 				invaders.insertBulletFromOtherPlayer(bullet);
 		});
+
+		setInterval(function() {
+			Latency = Date.now();
+			socket.emit("PingMeasurement");
+		}, 2500);
+		socket.on("PingReply", function() {
+			Latency = Date.now() - Latency;
+			invaders.updateLatency();
+		})
+
 	});
 
 

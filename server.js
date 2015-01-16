@@ -69,6 +69,10 @@
 				io.emit("bc_refresh", GameState);
 			});
 
+			socket.on("PingMeasurement", function() {
+				socket.emit("PingReply");
+			})
+
 			socket.on("disconnect", function() {
 				clients--;
 				GS.destroyPlayer(socket["conn"]["id"]);
