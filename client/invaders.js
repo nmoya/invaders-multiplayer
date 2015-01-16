@@ -8,6 +8,8 @@ function InvadersGame() {
     var fireButton;
     var explosions;
     var starfield;
+    var first_time = true;
+    var add_tween = true;
     var score = 0;
     var scoreString = '';
     var scoreText = null;
@@ -161,17 +163,27 @@ function InvadersGame() {
                     "id": i,
                     "status": {
                         "alive": a.alive,
-                        "progress": aliens.y,
-                        "x": a.x,
-                        "y": a.y
+                        "x": aliens.x,
+                        "y": aliens.y
                     }
                 });
+                i += 1;
             });
             socket.emit("enemies", enemies);
+            if (add_tween) {
+                var tween = game.add.tween(aliens).to({
+                    x: 350
+                }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
+
+                //  When the tween loops it calls descend
+                tween.onLoop.add(invaders.descend, this);
+                add_tween = false;
+            }
         } else {
-            if (aliens.length == 0)
+            if (first_time) {
                 invaders.createAliensNotLeader();
-            else {
+                first_time = false;
+            } else {
                 invaders.updateAliensNotLeader();
             }
         }
@@ -193,39 +205,47 @@ function InvadersGame() {
         aliens.y = 50;
 
         //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to, rather than the invaders directly.
-        var tween = game.add.tween(aliens).to({
-            x: 350
-        }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
+        // var tween = game.add.tween(aliens).to({
+        //     x: 350
+        // }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
 
-        //  When the tween loops it calls descend
-        tween.onLoop.add(invaders.descend, this);
+        // //  When the tween loops it calls descend
+        // tween.onLoop.add(invaders.descend, this);
     }
     this.createAliensNotLeader = function() {
-        for (var i in Aliens) {
-            var alien = aliens.create(50 + Aliens[i].status.x, 50 + Aliens[i].status.progress + Aliens[i].status.y, 'invader');
-            alien.anchor.setTo(0.5, 0.5);
-            alien.animations.add('fly', [0, 1, 2, 3], 20, true);
-            alien.play('fly');
-            alien.body.moves = false;
-            if (!Aliens[i].status.alive)
-                alien.kill();
+        for (var y = 0; y < 4; y++) {
+            for (var x = 0; x < 10; x++) {
+                var alien = aliens.create(x * 48, y * 50, 'invader');
+                alien.anchor.setTo(0.5, 0.5);
+                alien.animations.add('fly', [0, 1, 2, 3], 20, true);
+                alien.play('fly');
+                alien.body.moves = false;
+            }
         }
-        //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to, rather than the invaders directly.
-        var tween = game.add.tween(aliens).to({
-            x: 350
-        }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
 
-        //  When the tween loops it calls descend
-        tween.onLoop.add(invaders.descend, this);
+        aliens.x = 50;
+        aliens.y = 50;
+        //  All this does is basically start the invaders moving. Notice we're moving the Group they belong to, rather than the invaders directly.
+        // var tween = game.add.tween(aliens).to({
+        //     x: 350
+        // }, 2500, Phaser.Easing.Linear.None, true, 0, 1000, true);
+
+        // //  When the tween loops it calls descend
+        // tween.onLoop.add(invaders.descend, this);
     }
     this.updateAliensNotLeader = function() {
         var i = 0;
         aliens.forEach(function(a) {
-            a.reset(Aliens[i].status.x, Aliens[i].status.y);
             if (!Aliens[i].status.alive)
                 a.kill();
             i += 1;
-        })
+        });
+        for (var i in Aliens) {
+            aliens.x = Aliens[i].status.x;
+            aliens.y = Aliens[i].status.y;
+            break;
+        }
+
     }
 
     this.setupInvader = function(invader) {
@@ -244,10 +264,12 @@ function InvadersGame() {
     this.collisionHandler = function(bullet, alien) {
         //  When a bullet hits an alien we kill them both
         bullet.kill();
-        alien.kill();
 
-        if (invaders.isLeader())
+
+        if (invaders.isLeader()) {
             socket.emit("score_update", 20);
+            alien.kill();
+        }
 
         //  And create an explosion :)
         var explosion = explosions.getFirstExists(false);
@@ -255,7 +277,8 @@ function InvadersGame() {
         explosion.play('kaboom', 30, false, true);
 
         if (aliens.countLiving() == 0) {
-            socket.emit("score_update", 1000);
+            if (invaders.isLeader())
+                socket.emit("score_update", 1000);
 
             enemyBullets.callAll('kill', this);
             stateText.text = " You Won! \n Click to restart";
